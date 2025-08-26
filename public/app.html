@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>App - MyChat</title>
+  <style>
+    body { display: flex; height: 100vh; margin: 0; }
+    #servers { width: 150px; background: #222; color: white; padding: 10px; }
+    #channels { width: 200px; background: #333; color: white; padding: 10px; }
+    #chat { flex: 1; display: flex; flex-direction: column; }
+    #messages { flex: 1; overflow-y: auto; padding: 10px; }
+    #input { display: flex; }
+    #input input { flex: 1; }
+  </style>
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  <div id="servers">
+    <h3>Servers</h3>
+    <div id="server-list"></div>
+    <input id="new-server" placeholder="New server">
+    <button id="btn-server">Create</button>
+  </div>
+  <div id="channels">
+    <h3>Channels</h3>
+    <div id="channel-list"></div>
+    <input id="new-channel" placeholder="New channel">
+    <button id="btn-channel">Create</button>
+  </div>
+  <div id="chat">
+    <div id="messages"></div>
+    <div id="input">
+      <input id="msg" placeholder="Type a message">
+      <button id="btn-send">Send</button>
+    </div>
+    <button id="btn-logout">Logout</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'index.html';
+
+    const socket = io();
+    let currentServer = null;
+    let currentChannel = null;
+    let me = null;
+
+    async function API(path, method='GET', data=null) {
+      return fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: data ? JSON.stringify(data) : null
+      });
+    }
+
+    async function loadMe() {
+      const res = await API('/api/me');
+      const data = await res.json();
+      me = data.user;
+      loadServers();
+    }
+
+    async function loadServers() {
+      const res = await API('/api/servers');
+      const data = await res.json();
+      serverList.innerHTML = '';
+      data.servers.forEach(s => {
+        const btn = document.createElement('button');
+        btn.textContent = s.name;
+        btn.onclick = () => { currentServer = s.id; loadChannels(); };
+        serverList.appendChild(btn);
+      });
+    }
+
+    async function loadChannels() {
+      const res = await API('/api/servers/' + currentServer + '/channels');
+      const data = await res.json();
+      channelList.innerHTML = '';
+      data.channels.forEach(c => {
+        const btn = document.createElement('button');
+        btn.textContent = c.name;
+        btn.onclick = () => joinChannel(c.id);
+        channelList.appendChild(btn);
+      });
+    }
+
+    async function joinChannel(id) {
+      currentChannel = id;
+      messages.innerHTML = '';
+      const res = await API('/api/channels/' + id + '/messages');
+      const data = await res.json();
+      data.messages.forEach(m => addMessage(m.username + ': ' + m.content));
+      socket.emit('joinChannel', id);
+    }
+
+    function addMessage(txt) {
+      const div = document.createElement('div');
+      div.textContent = txt;
+      messages.appendChild(div);
+    }
+
+    btnSend.onclick = () => {
+      if (!currentChannel) return;
+      const msgTxt = msg.value;
+      socket.emit('message', { channelId: currentChannel, userId: me.id, username: me.username, content: msgTxt });
+      msg.value = '';
+    };
+
+    btnServer.onclick = async () => {
+      const res = await API('/api/servers', 'POST', { name: newServer.value });
+      newServer.value = '';
+      loadServers();
+    };
+
+    btnChannel.onclick = async () => {
+      if (!currentServer) return;
+      const res = await API('/api/servers/' + currentServer + '/channels', 'POST', { name: newChannel.value });
+      newChannel.value = '';
+      loadChannels();
+    };
+
+    btnLogout.onclick = () => {
+      localStorage.removeItem('token');
+      location.href = 'index.html';
+    };
+
+    socket.on('message', msg => {
+      if (msg.channelId === currentChannel) {
+        addMessage(msg.username + ': ' + msg.content);
+      }
+    });
+
+    loadMe();
+  </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar for servers -->
+  <div id="sidebar">
+    <h3>Servers</h3>
+    <div id="serversList"></div>
+    <button id="btn-admin">Admin</button>
+    <button id="btn-logout">Logout</button>
+  </div>
+
+  <!-- DM / Server Panel -->
+  <div id="serverPanel">
+    <h3>Channels / DMs</h3>
+    <div id="channels"></div>
+    <h4>Direct Messages</h4>
+    <div id="dmList"></div>
+    <input id="new-channel" placeholder="New channel">
+    <button id="btn-create-channel">Create Channel</button>
+  </div>
+
+  <!-- Chat area -->
+  <div id="chatArea">
+    <div id="chatMessages"></div>
+    <div id="chatInput">
+      <input id="chatInputBox" placeholder="Type a message">
+      <button id="btnSend">Send</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Admin Modal -->
+<div id="adminModal">
+  <h3>Admin Panel</h3>
+  <table id="adminTable">
+    <thead>
+      <tr><th>ID</th><th>Username</th><th>Email</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button id="closeAdmin">Close</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+<script src="dashboard.js"></script>
+<script src="admin.js"></script>
+<script src="chat.js"></script>
+</body>
+</html>
